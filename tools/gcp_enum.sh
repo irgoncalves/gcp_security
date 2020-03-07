@@ -1,12 +1,17 @@
 #!/bin/bash
 
 ###############################################################################
-# GCP enumeration script by the GitLab Red Team.
-
+# GCP enumeration script
+# 
+# Original version from Gitlab Red Team 
+# Forked, modified, and incremented by Ismael Goncalves
+#
 # This script is meant to run from a Linux Google Compute Instance. All
 # commands are passive, and will generate miscellaneous text files in the
-# `out-gcp-enum` folder in the current working directory.
-
+# `out-gcp-enum` folder in the current working directory. 
+#
+# This script utilizes gcloud, gsutil and curl
+#
 # Just run the script. Provide a "-d" argument to debug stderr.
 ###############################################################################
 
@@ -44,7 +49,7 @@ function run_cmd () {
         echo "  [+] SUCCESS"
     else
         echo "  [!] FAIL"
-    fi
+            fi
 }
 
 # From here on the syntax is:
@@ -59,14 +64,20 @@ echo "[*] Scraping metadata server"
 url="$META/computeMetadata/v1/?recursive=true&alt=text"
 run_cmd "curl '$url' -H 'Metadata-Flavor: Google'" "metadata.txt"
 
+echo "[*] Exporting access token for API access (check expiration after)"
+run_cmd "gcloud auth application-default print-access-token" "access-token.txt"
+
 echo "[*] Exporting detailed compute instance info"
 run_cmd "gcloud compute instances list --quiet --format=json" "compute-instances.json"
 
 echo "[*] Exporting detailed firewall info"
-run_cmd "gcloud compute firewall-rules list --quiet --format=json" "firewall.json"
+run_cmd "gcloud compute firewall-rules list --quiet --format=" "firewall.txt"
 
 echo "[*] Exporting detailed subnets info"
-run_cmd "gcloud compute networks subnets list --quiet --format=json" "subnets.json"
+run_cmd "gcloud compute networks subnets list --quiet --format=" "subnets.txt"
+
+echo "[*] Exporting routes info"
+run_cmd "gcloud compute routes list --quiet --format=" "routes.txt"
 
 echo "[*] Exporting detailed service account info"
 run_cmd "gcloud iam service-accounts list --quiet --format=json" "service-accounts.json"
@@ -131,14 +142,9 @@ run_cmd "gcloud bigtable instances list --quiet --format=json" "cloud-bigtable.j
 echo "[*] Exporting detailed Cloud Filestore info"
 run_cmd "gcloud filestore instances list --quiet --format=json" "cloud-filestore.json"
 
+# removed exporting entire logs due space concerns 
 echo "[*] Exporting Stackdriver logging info"
 run_cmd "gcloud logging logs list --quiet --format json" "logging-folders.json"
-for i in $(gcloud logging logs list --quiet --format="table[no-heading](.)"); do
-    echo Looking for logs in $i:
-    short=$(echo "$i" | tr "/" ".")
-    run_cmd "gcloud logging read $i --quiet --format=json" "logging-$short.json"
-done
-echo "[+] All done, good luck!"
 
 echo "[*] Exporting Kubernetes info"
 run_cmd "gcloud container clusters list --quiet --format json" "k8s-clusters.json"
@@ -157,5 +163,7 @@ for i in $(gcloud kms keyrings list --location global --quiet); do
     run_cmd "gcloud kms keys list --keyring $i --location global --quiet" "kms.txt"
 done
 
-echo "[+] All done, good luck!"
+echo "[*] Enumerating secrets (from Secret Manager)"
+run_cmd "gcloud secrets list --quiet --format json" "secrets.json"
 
+echo "[+] All done, good luck!" 
