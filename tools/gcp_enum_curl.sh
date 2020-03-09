@@ -7,17 +7,14 @@
 # commands are passive, and will generate miscellaneous text files in the
 # `out-gcp-enum` folder in the current working directory.
 #
-# This script utilizes only curl and does not require cloud and/or gstuil
-#
-# Just run the script. Provide a "-d" argument to debug stderr.
+# This script utilizes only curl and does not require gcloud and/or gstuil
+# installed on the target machine
 #
 # This script is based out of an enum script provided by GitLab Red Team
 # however this is completly rewritten to use only curl calls and also
-# increase enumeration resources
+# has additional enumerations
 #
 # Ismael Goncalves
-#
-#
 #
 ###############################################################################
 
